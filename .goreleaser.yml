@@ -36,4 +36,4 @@ changelog:
     - '^test:'
     - Merge pull request
     - Merge branch
-project_name : aws-google-aut-go
+project_name : aws-google-auth-go
