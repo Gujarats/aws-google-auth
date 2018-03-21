@@ -7,9 +7,23 @@ import (
 )
 
 type Config struct {
-	ProfileParent string `viper:profileParent`
-	Profile       string `viper:"profile"`
-	Password      string `viper:password`
+	Profile string `viper:"profile"`
+
+	Region            string `viper:"region"`
+	RoleName          string `viper:roleName`
+	AwsConfigPath     string `viper:awsConfigPath`
+	AwsCredentialPath string `viper:awsCredentialPath`
+
+	// Key for getting the value from parameter store
+	SecretKey string `viper:secretKey`
+	AccessKey string `viper:accessKey`
+
+	// congfig key value for gralde.properties
+	GradleAccessKey string `viper:gradleAccessKey`
+	GradleSecretKey string `viper:gradleSecretKey`
+
+	UseGradleProperties bool `viper:useGradleProperties`
+	UseEnvVariable      bool `viper:useEnvVariable`
 }
 
 const (
