@@ -26,14 +26,12 @@ All the profiles above is store in `~/.aws/config`
 
 you must install :
  - [aws-google-auth](https://github.com/cevoaustralia/aws-google-auth)
- - [awsudo](https://github.com/makethunder/awsudo)
 
 Sorry this is just lazy way to do  it :D
 
 
 ## TODO 
 
- - Rewrite  `aws-google-auth` in go
- - Rewrite `awsudo` in go
+ - Rewrite  `aws-google-auth` in go 
 
 Seems pretty straight forward but takes time.
