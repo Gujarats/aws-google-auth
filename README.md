@@ -1,6 +1,15 @@
 # Aws google auth
 using google SSO and then assume role what a trick !
 
+## Install
+
+You can choose the binary file ready to download on this [release](Gujarats/aws-google-auth/releases).
+Or you can run this command : 
+
+``` shell
+$ curl https://raw.githubusercontent.com/Gujarats/aws-google-auth/master/downloader.sh | sh
+```
+
 ## Usage
 
 Create config file in `$HOME/.aws-google-auth/config.yaml`
