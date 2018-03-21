@@ -3,12 +3,14 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
-	"strings"
-	"syscall"
 
-	"github.com/Gujarats/logger"
+	"github.com/Gujarats/ark"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
+	"github.com/aws/aws-sdk-go/service/ssm"
 )
 
 const (
@@ -23,27 +25,38 @@ func main() {
 
 	app := "aws-google-auth"
 	arg1 := "-p"
-	profileParent := config.ProfileParent
+	profile := config.Profile
 
-	result := runCommand(app, arg1, profileParent)
+	result := runCommand(app, arg1, profile)
 	fmt.Println(result)
 
-	assumeRole(config)
+	accessKey, secretKey := getKeysFromParameterStore(config)
+
+	exportVariable(config, secretKey, accessKey)
 }
 
-func assumeRole(config *Config) {
+func getKeysFromParameterStore(config *Config) (string, string) {
+	sess, err := CreateSessionWithProfile(config.Region, config.Profile)
 
-	app := "awsudo"
-	argUser := config.Profile
+	creds := stscreds.NewCredentials(sess, config.RoleName)
+	svc := ssm.New(sess, &aws.Config{Credentials: creds})
 
-	result := runCommand(app, argUser)
+	accessKey, err := svc.GetParameter(&ssm.GetParameterInput{
+		Name:           aws.String(config.AccessKey),
+		WithDecryption: aws.Bool(true),
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	secretKey, err := svc.GetParameter(&ssm.GetParameterInput{
+		Name:           aws.String(config.SecretKey),
+		WithDecryption: aws.Bool(true),
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	lines := strings.Fields(result)
-	fmt.Println("len lines = ", len(lines))
-	fmt.Println("len 0 = ", lines[0])
-	logger.Debug("lines", lines)
-
-	exportVariable(lines)
+	return *accessKey.Parameter.Value, *secretKey.Parameter.Value
 }
 
 func runCommand(cmdName string, arg ...string) string {
@@ -65,24 +78,24 @@ func runCommand(cmdName string, arg ...string) string {
 	return string(stdout.Bytes())
 }
 
-func exportVariable(data []string) error {
-	envs := make(map[string]string)
-	envs[AWS_ACCESS_KEY_ID] = data[0][len(AWS_ACCESS_KEY_ID)+1:]
-	envs[AWS_SECRET_ACCESS_KEY] = data[1][len(AWS_SECRET_ACCESS_KEY)+1:]
-	envs[AWS_SESSION_TOKEN] = data[2][len(AWS_SESSION_TOKEN)+1:]
-
-	for key, value := range envs {
-		err := os.Setenv(key, value)
+func exportVariable(config *Config, secretKey, accessKey string) error {
+	if config.UseEnvVariable {
+		err := ark.SetEnvVariableAWS(accessKey, secretKey, "")
 		if err != nil {
 			return err
 		}
 	}
 
-	logger.Debug("AWS_ACCESS_KEY_ID :: ", os.Getenv(AWS_ACCESS_KEY_ID))
-	logger.Debug("AWS_SECRET_ACCESS_KEY :: ", os.Getenv(AWS_SECRET_ACCESS_KEY))
-	logger.Debug("AWS_SECRET_ACCESS_KEY :: ", os.Getenv(AWS_SESSION_TOKEN))
+	if config.UseGradleProperties {
+		configGradle := make(map[string]string)
+		configGradle[ark.AccessKey] = config.GradleAccessKey
+		configGradle[ark.SecretKey] = config.GradleSecretKey
 
-	syscall.Exec(os.Getenv("SHELL"), []string{os.Getenv("SHELL")}, syscall.Environ())
+		err := ark.UpdateGradleProperties(configGradle, accessKey, secretKey)
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
