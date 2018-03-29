@@ -33,5 +33,3 @@ Sorry this is just lazy way to do  it :D
 ## TODO 
 
  - Rewrite  `aws-google-auth` in go 
-
-Seems pretty straight forward but takes time.
